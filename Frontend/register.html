@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - IslandGate</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="auth-container" style="max-width: 520px; margin: 3rem auto;">
+        <div class="auth-header">
+            <h2>Create an Account</h2>
+            <p>Sign up to start booking customized luxury island packages</p>
+        </div>
+
+        <form class="auth-form" id="register-form">
+            <div class="form-group">
+                <label for="register-name">Full Name</label>
+                <input type="text" id="register-name" placeholder="e.g. Rahul Sharma" class="form-control" required autocomplete="name">
+            </div>
+
+            <div class="form-group">
+                <label for="register-email">Email Address</label>
+                <input type="email" id="register-email" placeholder="e.g. rahul@gmail.com" class="form-control" required autocomplete="email">
+            </div>
+
+            <div class="form-group">
+                <label for="register-phone">Phone Number</label>
+                <input type="tel" id="register-phone" placeholder="e.g. 9876543210" class="form-control" required autocomplete="tel">
+            </div>
+
+            <div class="form-group">
+                <label for="register-nationality">Nationality</label>
+                <input type="text" id="register-nationality" placeholder="e.g. Indian" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="register-password">Password</label>
+                <input type="password" id="register-password" placeholder="Min 6 characters" class="form-control" required autocomplete="new-password">
+            </div>
+
+            <button type="submit" class="btn-auth-submit">Register</button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Already have an account? <a href="login.html">Log in here</a></p>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 IslandGate Booking System. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        document.getElementById("register-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const full_name = document.getElementById("register-name").value.trim();
+            const email = document.getElementById("register-email").value.trim();
+            const phone = document.getElementById("register-phone").value.trim();
+            const nationality = document.getElementById("register-nationality").value.trim();
+            const password = document.getElementById("register-password").value;
+
+            if (password.length < 6) {
+                showAlert("Password must be at least 6 characters long", "error");
+                return;
+            }
+
+            try {
+                const payload = {
+                    full_name,
+                    email,
+                    phone,
+                    nationality,
+                    password
+                };
+
+                const response = await apiFetch("/customers/add/", {
+                    method: "POST",
+                    body: JSON.stringify(payload)
+                });
+
+                showAlert("Registration successful! Redirecting to login...", "success");
+                setTimeout(() => {
+                    window.location.href = "login.html";
+                }, 1500);
+            } catch (error) {
+                showAlert(error.message || "Failed to register. Email/ID might be taken.", "error");
+                console.error("Registration failed:", error);
+            }
+        });
+    </script>
+</body>
+</html>

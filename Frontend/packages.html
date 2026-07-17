@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vacation Packages - IslandGate</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="section">
+        <div id="filter-status-banner" style="display:none; background-color:var(--primary-light); border:1px solid var(--primary); padding:1rem 1.5rem; border-radius:var(--radius-md); margin-bottom:2.5rem; justify-content:space-between; align-items:center;">
+            <span style="font-weight:600; color:var(--primary-hover);" id="filter-banner-text">Showing packages for Island</span>
+            <button class="btn-secondary" onclick="clearIslandFilter()" style="padding:0.4rem 0.8rem; font-size:0.85rem;">Show All Packages</button>
+        </div>
+
+        <h2 class="section-title">Exclusive <span>Resort & Travel Packages</span></h2>
+        
+        <div class="packages-grid" id="packages-grid">
+            <div style="grid-column: 1/-1; text-align:center; padding:3rem; color:var(--text-secondary);">
+                Loading packages...
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 IslandGate Booking System. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        let allPackages = [];
+        let currentIslandFilter = "";
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            const params = new URLSearchParams(window.location.search);
+            currentIslandFilter = params.get('island_name') || "";
+
+            await fetchAndRenderPackages();
+        });
+
+        async function fetchAndRenderPackages() {
+            const grid = document.getElementById("packages-grid");
+            try {
+                allPackages = await apiFetch("/packages/");
+                renderPackagesList();
+            } catch (err) {
+                console.error(err);
+                grid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align:center; padding:3rem; color:var(--danger);">
+                        Failed to load vacation packages from server.
+                    </div>
+                `;
+            }
+        }
+
+        function renderPackagesList() {
+            const grid = document.getElementById("packages-grid");
+            const banner = document.getElementById("filter-status-banner");
+            const bannerText = document.getElementById("filter-banner-text");
+
+            let filtered = allPackages;
+            if (currentIslandFilter) {
+                filtered = allPackages.filter(pkg => pkg.island_name.toLowerCase() === currentIslandFilter.toLowerCase());
+                bannerText.innerText = `🌴 Showing vacation packages for island: "${currentIslandFilter}"`;
+                banner.style.display = "flex";
+            } else {
+                banner.style.display = "none";
+            }
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align:center; padding:4rem; color:var(--text-secondary); background:var(--bg-card); border-radius:var(--radius-lg); border:1px solid var(--border);">
+                        <p style="font-size:1.2rem; font-weight:600; margin-bottom:0.5rem;">No Packages Available</p>
+                        <p>${currentIslandFilter ? `No packages have been added for the island "${currentIslandFilter}" yet.` : 'No packages exist in the system yet.'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(pkg => {
+                const services = pkg.included_services ? pkg.included_services.split(',').map(s => s.trim()) : [];
+                return `
+                    <div class="package-card">
+                        <div class="card-img-container">
+                            <img src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=600&q=80" class="card-img" alt="${pkg.resort_name}">
+                            <span class="card-badge">${pkg.duration}</span>
+                        </div>
+                        <div class="card-body">
+                            <span style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05rem; color:var(--primary); font-weight:700; margin-bottom:0.25rem;">🌴 ${pkg.island_name}</span>
+                            <h3 class="card-title" style="margin-bottom:0.25rem;">${pkg.package_name}</h3>
+                            <div class="card-subtitle" style="margin-bottom:1rem;">🏨 ${pkg.resort_name}</div>
+                            
+                            <p style="font-size:0.8rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:0.4rem; letter-spacing:0.04em;">Services Included:</p>
+                            <div class="services-list">
+                                ${services.map(s => `<span class="service-tag">${s}</span>`).join('')}
+                            </div>
+                            
+                            <div class="card-meta-list" style="margin-top:auto;">
+                                <div class="card-meta-item">
+                                    <span class="card-meta-label">Package Price</span>
+                                    <span class="card-meta-val" style="color:var(--primary); font-size:1.35rem; font-weight:800;">₹${pkg.price.toLocaleString()}</span>
+                                </div>
+                            </div>
+                            <button class="btn-card-action" onclick="bookNow(${pkg.package_id})">Book Vacation</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function clearIslandFilter() {
+            currentIslandFilter = "";
+            history.pushState(null, "", "packages.html");
+            renderPackagesList();
+        }
+
+        function bookNow(packageId) {
+            window.location.href = `booking.html?package_id=${packageId}`;
+        }
+    </script>
+</body>
+</html>

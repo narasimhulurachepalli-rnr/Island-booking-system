@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - IslandGate</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="section" style="max-width:1400px; flex-grow:1; display:flex; flex-direction:column;">
+        <div style="margin-bottom: 2rem; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <h1 style="font-family:var(--font-heading); margin-bottom:0.25rem;">Administrator <span>Control Panel</span></h1>
+                <p style="color:var(--text-secondary);">Manage collections, bookings, payments, and system integrity.</p>
+            </div>
+            <div>
+                <button class="btn-add-item" onclick="openAddModal()">➕ Add New Record</button>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Sidebar Navigation -->
+            <aside class="dashboard-sidebar">
+                <button class="db-tab-btn active" onclick="switchAdminTab('customers')">👥 Customers</button>
+                <button class="db-tab-btn" onclick="switchAdminTab('islands')">🌴 Islands</button>
+                <button class="db-tab-btn" onclick="switchAdminTab('packages')">🎁 Packages</button>
+                <button class="db-tab-btn" onclick="switchAdminTab('bookings')">📖 Bookings</button>
+                <button class="db-tab-btn" onclick="switchAdminTab('payments')">💳 Payments</button>
+            </aside>
+
+            <!-- Main Content Container -->
+            <section class="dashboard-main">
+                
+                <!-- Customers Tab -->
+                <div id="tab-customers" class="dashboard-card db-tab-content">
+                    <h2 style="font-size:1.4rem; margin-bottom:1.5rem; font-weight:800;">Manage Customers</h2>
+                    <div class="table-container">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Customer ID</th>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Nationality</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customers-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Islands Tab -->
+                <div id="tab-islands" class="dashboard-card db-tab-content" style="display:none;">
+                    <h2 style="font-size:1.4rem; margin-bottom:1.5rem; font-weight:800;">Manage Islands</h2>
+                    <div class="table-container">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Island ID</th>
+                                    <th>Island Name</th>
+                                    <th>Country</th>
+                                    <th>Climate</th>
+                                    <th>Best Season</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="islands-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Packages Tab -->
+                <div id="tab-packages" class="dashboard-card db-tab-content" style="display:none;">
+                    <h2 style="font-size:1.4rem; margin-bottom:1.5rem; font-weight:800;">Manage Packages</h2>
+                    <div class="table-container">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Package ID</th>
+                                    <th>Package Name</th>
+                                    <th>Island</th>
+                                    <th>Resort</th>
+                                    <th>Duration</th>
+                                    <th>Price</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="packages-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Bookings Tab -->
+                <div id="tab-bookings" class="dashboard-card db-tab-content" style="display:none;">
+                    <h2 style="font-size:1.4rem; margin-bottom:1.5rem; font-weight:800;">Manage Bookings</h2>
+                    <div class="table-container">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Booking ID</th>
+                                    <th>Customer</th>
+                                    <th>Island</th>
+                                    <th>Package</th>
+                                    <th>Travel Date</th>
+                                    <th>Guests</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bookings-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Payments Tab -->
+                <div id="tab-payments" class="dashboard-card db-tab-content" style="display:none;">
+                    <h2 style="font-size:1.4rem; margin-bottom:1.5rem; font-weight:800;">Manage Payments</h2>
+                    <div class="table-container">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Payment ID</th>
+                                    <th>Booking ID</th>
+                                    <th>Customer</th>
+                                    <th>Amount</th>
+                                    <th>Method</th>
+                                    <th>Status</th>
+                                    <th>Txn ID</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="payments-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </section>
+        </div>
+    </main>
+
+    <!-- Generic CRUD Modal Dialog -->
+    <div class="modal" id="crud-modal">
+        <div class="modal-content">
+            <button class="modal-close-btn" onclick="closeModal()">&times;</button>
+            <h3 class="modal-title" id="modal-title-text">Add New Record</h3>
+            
+            <form id="modal-form" class="auth-form">
+                <!-- Inputs will be mounted dynamically here depending on the active tab -->
+                <div id="modal-form-inputs"></div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn-primary" id="modal-submit-btn">Save Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 IslandGate Booking System. Administrator Mode.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        let currentTab = "customers";
+        let editMode = false;
+        let editId = null;
+
+        // Data caches
+        let cacheCustomers = [];
+        let cacheIslands = [];
+        let cachePackages = [];
+        let cacheBookings = [];
+        let cachePayments = [];
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            await reloadTab(currentTab);
+        });
+
+        async function reloadTab(tabName) {
+            try {
+                if (tabName === "customers") {
+                    cacheCustomers = await apiFetch("/customers/");
+                    renderCustomers();
+                } else if (tabName === "islands") {
+                    cacheIslands = await apiFetch("/islands/");
+                    renderIslands();
+                } else if (tabName === "packages") {
+                    cachePackages = await apiFetch("/packages/");
+                    cacheIslands = await apiFetch("/islands/"); // Needed for dropdown
+                    renderPackages();
+                } else if (tabName === "bookings") {
+                    cacheBookings = await apiFetch("/bookings/");
+                    renderBookings();
+                } else if (tabName === "payments") {
+                    cachePayments = await apiFetch("/payments/");
+                    renderPayments();
+                }
+            } catch (err) {
+                console.error(err);
+                showAlert(`Failed to fetch ${tabName} data`, "error");
+            }
+        }
+
+        function switchAdminTab(tabName) {
+            currentTab = tabName;
+            
+            // Sidebar buttons
+            const buttons = document.querySelectorAll(".db-tab-btn");
+            buttons.forEach(btn => {
+                if (btn.innerText.toLowerCase().includes(tabName)) {
+                    btn.classList.add("active");
+                } else {
+                    btn.classList.remove("active");
+                }
+            });
+
+            // Content wrappers
+            const contents = document.querySelectorAll(".db-tab-content");
+            contents.forEach(content => {
+                if (content.id === `tab-${tabName}`) {
+                    content.style.display = "block";
+                } else {
+                    content.style.display = "none";
+                }
+            });
+
+            reloadTab(tabName);
+        }
+
+        // ==================== RENDERING UTILS ====================
+
+        function renderCustomers() {
+            const tbody = document.getElementById("customers-table-body");
+            if (cacheCustomers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-secondary);">No customers found.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = cacheCustomers.map(c => `
+                <tr>
+                    <td style="font-weight:600;">${c.customer_id}</td>
+                    <td>${c.full_name}</td>
+                    <td>${c.email}</td>
+                    <td>${c.phone}</td>
+                    <td>${c.nationality}</td>
+                    <td>
+                        <div class="action-btn-group">
+                            <button class="btn-action-edit" onclick="triggerEdit('customers', ${c.customer_id})">Edit</button>
+                            <button class="btn-action-delete" onclick="triggerDelete('customers', ${c.customer_id})">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderIslands() {
+            const tbody = document.getElementById("islands-table-body");
+            if (cacheIslands.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-secondary);">No islands found.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = cacheIslands.map(i => `
+                <tr>
+                    <td style="font-weight:600;">${i.island_id}</td>
+                    <td>${i.island_name}</td>
+                    <td>${i.country}</td>
+                    <td>${i.climate}</td>
+                    <td>${i.best_season}</td>
+                    <td>
+                        <div class="action-btn-group">
+                            <button class="btn-action-edit" onclick="triggerEdit('islands', ${i.island_id})">Edit</button>
+                            <button class="btn-action-delete" onclick="triggerDelete('islands', ${i.island_id})">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderPackages() {
+            const tbody = document.getElementById("packages-table-body");
+            if (cachePackages.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-secondary);">No packages found.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = cachePackages.map(p => `
+                <tr>
+                    <td style="font-weight:600;">${p.package_id}</td>
+                    <td style="font-weight:600;">${p.package_name}</td>
+                    <td>${p.island_name}</td>
+                    <td>${p.resort_name}</td>
+                    <td>${p.duration}</td>
+                    <td style="font-weight:700; color:var(--primary);">₹${p.price.toLocaleString()}</td>
+                    <td>
+                        <div class="action-btn-group">
+                            <button class="btn-action-edit" onclick="triggerEdit('packages', ${p.package_id})">Edit</button>
+                            <button class="btn-action-delete" onclick="triggerDelete('packages', ${p.package_id})">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderBookings() {
+            const tbody = document.getElementById("bookings-table-body");
+            if (cacheBookings.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:2rem; color:var(--text-secondary);">No bookings found.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = cacheBookings.map(b => `
+                <tr>
+                    <td style="font-weight:600;">#${b.booking_id}</td>
+                    <td>${b.customer_name}</td>
+                    <td>${b.island_name}</td>
+                    <td>${b.package_name}</td>
+                    <td>${b.travel_date}</td>
+                    <td>${b.number_of_people}</td>
+                    <td style="font-weight:700;">₹${b.total_amount.toLocaleString()}</td>
+                    <td><span class="status-badge ${b.booking_status.toLowerCase()}">${b.booking_status}</span></td>
+                    <td>
+                        <div class="action-btn-group">
+                            <button class="btn-action-edit" onclick="triggerEdit('bookings', ${b.booking_id})">Status</button>
+                            <button class="btn-action-delete" onclick="triggerDelete('bookings', ${b.booking_id})">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderPayments() {
+            const tbody = document.getElementById("payments-table-body");
+            if (cachePayments.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--text-secondary);">No payments found.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = cachePayments.map(p => `
+                <tr>
+                    <td style="font-weight:600;">${p.payment_id}</td>
+                    <td style="font-weight:600;">#${p.booking_id}</td>
+                    <td>${p.customer_name}</td>
+                    <td style="font-weight:700; color:var(--success);">₹${p.amount.toLocaleString()}</td>
+                    <td>${p.payment_method}</td>
+                    <td><span class="status-badge ${p.payment_status.toLowerCase()}">${p.payment_status}</span></td>
+                    <td style="font-family:monospace; font-size:0.8rem;">${p.transaction_id || '-'}</td>
+                    <td>
+                        <div class="action-btn-group">
+                            <button class="btn-action-edit" onclick="triggerEdit('payments', ${p.payment_id})">Status</button>
+                            <button class="btn-action-delete" onclick="triggerDelete('payments', ${p.payment_id})">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ==================== MODAL FORM SETUP ====================
+
+        function openAddModal() {
+            editMode = false;
+            editId = null;
+            document.getElementById("modal-title-text").innerText = `Add New ${capitalize(currentTab.slice(0, -1))}`;
+            setupModalInputs();
+            document.getElementById("crud-modal").classList.add("active");
+        }
+
+        function triggerEdit(tabName, id) {
+            editMode = true;
+            editId = id;
+            document.getElementById("modal-title-text").innerText = `Edit ${capitalize(tabName.slice(0, -1))} (ID: ${id})`;
+            setupModalInputs();
+
+            // Populate inputs
+            if (tabName === "customers") {
+                const item = cacheCustomers.find(c => c.customer_id === id);
+                document.getElementById("cust-id-input").value = item.customer_id;
+                document.getElementById("cust-name-input").value = item.full_name;
+                document.getElementById("cust-email-input").value = item.email;
+                document.getElementById("cust-phone-input").value = item.phone;
+                document.getElementById("cust-nat-input").value = item.nationality;
+                document.getElementById("cust-pass-input").value = item.password;
+            } else if (tabName === "islands") {
+                const item = cacheIslands.find(i => i.island_id === id);
+                document.getElementById("isl-id-input").value = item.island_id;
+                document.getElementById("isl-name-input").value = item.island_name;
+                document.getElementById("isl-country-input").value = item.country;
+                document.getElementById("isl-desc-input").value = item.description;
+                document.getElementById("isl-climate-input").value = item.climate;
+                document.getElementById("isl-season-input").value = item.best_season;
+                document.getElementById("isl-img-input").value = item.image_url || "";
+            } else if (tabName === "packages") {
+                const item = cachePackages.find(p => p.package_id === id);
+                document.getElementById("pkg-id-input").value = item.package_id;
+                document.getElementById("pkg-island-select").value = item.island_name;
+                document.getElementById("pkg-resort-input").value = item.resort_name;
+                document.getElementById("pkg-name-input").value = item.package_name;
+                document.getElementById("pkg-duration-input").value = item.duration;
+                document.getElementById("pkg-price-input").value = item.price;
+                
+                // Pre-check services
+                const services = item.included_services ? item.included_services.split(',').map(s => s.trim()) : [];
+                document.querySelectorAll('.pkg-service-check').forEach(chk => {
+                    chk.checked = services.includes(chk.value);
+                });
+            } else if (tabName === "bookings") {
+                const item = cacheBookings.find(b => b.booking_id === id);
+                document.getElementById("book-status-select").value = item.booking_status;
+            } else if (tabName === "payments") {
+                const item = cachePayments.find(p => p.payment_id === id);
+                document.getElementById("pay-status-select").value = item.payment_status;
+            }
+
+            document.getElementById("crud-modal").classList.add("active");
+        }
+
+        function closeModal() {
+            document.getElementById("crud-modal").classList.remove("active");
+            document.getElementById("modal-form").reset();
+        }
+
+        function capitalize(s) {
+            return s.charAt(0).toUpperCase() + s.slice(1);
+        }
+
+        function setupModalInputs() {
+            const container = document.getElementById("modal-form-inputs");
+            
+            if (currentTab === "customers") {
+                container.innerHTML = `
+                    <div class="form-group">
+                        <label for="cust-id-input">Customer ID</label>
+                        <input type="number" id="cust-id-input" class="form-control" placeholder="Leave empty for auto-assignment" ${editMode ? 'readonly style="background-color:var(--border);"' : ''}>
+                    </div>
+                    <div class="form-group">
+                        <label for="cust-name-input">Full Name</label>
+                        <input type="text" id="cust-name-input" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cust-email-input">Email Address</label>
+                        <input type="email" id="cust-email-input" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cust-phone-input">Phone Number</label>
+                        <input type="tel" id="cust-phone-input" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cust-nat-input">Nationality</label>
+                        <input type="text" id="cust-nat-input" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cust-pass-input">Password</label>
+                        <input type="text" id="cust-pass-input" class="form-control" required>
+                    </div>
+                `;
+            } else if (currentTab === "islands") {
+                container.innerHTML = `
+                    <div class="form-group">
+                        <label for="isl-id-input">Island ID</label>
+                        <input type="number" id="isl-id-input" class="form-control" placeholder="Leave empty for auto-assignment" ${editMode ? 'readonly style="background-color:var(--border);"' : ''}>
+                    </div>
+                    <div class="form-group">
+                        <label for="isl-name-input">Island Name</label>
+                        <input type="text" id="isl-name-input" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="isl-country-input">Country</label>
+                        <input type="text" id="isl-country-input" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="isl-desc-input">Description</label>
+                        <textarea id="isl-desc-input" class="form-control" rows="3" required style="resize:vertical;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="isl-climate-input">Climate</label>
+                        <select id="isl-climate-input" class="form-control" required>
+                            <option value="Tropical">Tropical</option>
+                            <option value="Temperate">Temperate</option>
+                            <option value="Mediterranean">Mediterranean</option>
+                            <option value="Subtropical">Subtropical</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="isl-season-input">Best Season</label>
+                        <input type="text" id="isl-season-input" class="form-control" placeholder="e.g. November to April" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="isl-img-input">Image URL</label>
+                        <input type="text" id="isl-img-input" class="form-control" placeholder="Leave empty for default image">
+                    </div>
+                `;
+            } else if (currentTab === "packages") {
+                const islandOptions = cacheIslands.map(i => `<option value="${i.island_name}">${i.island_name}</option>`).join('');
+                container.innerHTML = `
+                    <div class="form-group">
+                        <label for="pkg-id-input">Package ID</label>
+                        <input type="number" id="pkg-id-input" class="form-control" placeholder="Leave empty for auto-assignment" ${editMode ? 'readonly style="background-color:var(--border);"' : ''}>
+                    </div>
+                    <div class="form-group">
+                        <label for="pkg-island-select">Island Name</label>
+                        <select id="pkg-island-select" class="form-control" required>
+                            <option value="">-- Choose Island --</option>
+                            ${islandOptions}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pkg-resort-input">Resort Name</label>
+                        <input type="text" id="pkg-resort-input" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pkg-name-input">Package Name</label>
+                        <input type="text" id="pkg-name-input" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pkg-duration-input">Duration</label>
+                        <input type="text" id="pkg-duration-input" class="form-control" placeholder="e.g. 5 Days / 4 Nights" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pkg-price-input">Price (₹)</label>
+                        <input type="number" id="pkg-price-input" class="form-control" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Included Services</label>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-top:0.25rem;">
+                            <label style="font-weight:normal; text-transform:none;"><input type="checkbox" class="pkg-service-check" value="Accommodation"> Accommodation</label>
+                            <label style="font-weight:normal; text-transform:none;"><input type="checkbox" class="pkg-service-check" value="Breakfast"> Breakfast</label>
+                            <label style="font-weight:normal; text-transform:none;"><input type="checkbox" class="pkg-service-check" value="Airport Pickup"> Airport Pickup</label>
+                            <label style="font-weight:normal; text-transform:none;"><input type="checkbox" class="pkg-service-check" value="Island Tour"> Island Tour</label>
+                            <label style="font-weight:normal; text-transform:none;"><input type="checkbox" class="pkg-service-check" value="Water Sports"> Water Sports</label>
+                            <label style="font-weight:normal; text-transform:none;"><input type="checkbox" class="pkg-service-check" value="Dinner"> Dinner</label>
+                        </div>
+                    </div>
+                `;
+            } else if (currentTab === "bookings") {
+                container.innerHTML = `
+                    <p style="margin-bottom:1rem; font-size:0.9rem;">Update booking status details.</p>
+                    <div class="form-group">
+                        <label for="book-status-select">Booking Status</label>
+                        <select id="book-status-select" class="form-control" required>
+                            <option value="Confirmed">Confirmed</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                `;
+            } else if (currentTab === "payments") {
+                container.innerHTML = `
+                    <p style="margin-bottom:1rem; font-size:0.9rem;">Update payment verification status.</p>
+                    <div class="form-group">
+                        <label for="pay-status-select">Payment Status</label>
+                        <select id="pay-status-select" class="form-control" required>
+                            <option value="Success">Success</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Failed">Failed</option>
+                        </select>
+                    </div>
+                `;
+            }
+        }
+
+        // ==================== SUBMIT CONTROLLER ====================
+
+        document.getElementById("modal-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            
+            let url = "";
+            let method = editMode ? "PUT" : "POST";
+            let payload = {};
+
+            try {
+                if (currentTab === "customers") {
+                    const cid = document.getElementById("cust-id-input").value;
+                    payload = {
+                        full_name: document.getElementById("cust-name-input").value.trim(),
+                        email: document.getElementById("cust-email-input").value.trim(),
+                        phone: document.getElementById("cust-phone-input").value.trim(),
+                        nationality: document.getElementById("cust-nat-input").value.trim(),
+                        password: document.getElementById("cust-pass-input").value
+                    };
+                    if (!editMode && cid) payload.customer_id = parseInt(cid);
+
+                    url = editMode ? `/customers/update/${editId}/` : "/customers/add/";
+
+                } else if (currentTab === "islands") {
+                    const iid = document.getElementById("isl-id-input").value;
+                    payload = {
+                        island_name: document.getElementById("isl-name-input").value.trim(),
+                        country: document.getElementById("isl-country-input").value.trim(),
+                        description: document.getElementById("isl-desc-input").value.trim(),
+                        climate: document.getElementById("isl-climate-input").value,
+                        best_season: document.getElementById("isl-season-input").value.trim(),
+                        image_url: document.getElementById("isl-img-input").value.trim()
+                    };
+                    if (!editMode && iid) payload.island_id = parseInt(iid);
+
+                    url = editMode ? `/islands/update/${editId}/` : "/islands/add/";
+
+                } else if (currentTab === "packages") {
+                    const pid = document.getElementById("pkg-id-input").value;
+                    
+                    // Comma separated services
+                    const servicesChecked = [];
+                    document.querySelectorAll('.pkg-service-check:checked').forEach(chk => {
+                        servicesChecked.push(chk.value);
+                    });
+
+                    payload = {
+                        island_name: document.getElementById("pkg-island-select").value,
+                        resort_name: document.getElementById("pkg-resort-input").value.trim(),
+                        package_name: document.getElementById("pkg-name-input").value.trim(),
+                        duration: document.getElementById("pkg-duration-input").value.trim(),
+                        price: parseFloat(document.getElementById("pkg-price-input").value) || 0.0,
+                        included_services: servicesChecked.join(', ')
+                    };
+                    if (!editMode && pid) payload.package_id = parseInt(pid);
+
+                    url = editMode ? `/packages/update/${editId}/` : "/packages/add/";
+
+                } else if (currentTab === "bookings") {
+                    if (!editMode) return; // Add not supported from general admin
+                    const item = cacheBookings.find(b => b.booking_id === editId);
+                    payload = {
+                        ...item,
+                        booking_status: document.getElementById("book-status-select").value
+                    };
+                    url = `/bookings/update/${editId}/`;
+
+                } else if (currentTab === "payments") {
+                    if (!editMode) return;
+                    const item = cachePayments.find(p => p.payment_id === editId);
+                    payload = {
+                        ...item,
+                        payment_status: document.getElementById("pay-status-select").value
+                    };
+                    url = `/payments/update/${editId}/`;
+                }
+
+                await apiFetch(url, {
+                    method: method,
+                    body: JSON.stringify(payload)
+                });
+
+                showAlert(`Successfully ${editMode ? 'updated' : 'added'} record!`, "success");
+                closeModal();
+                await reloadTab(currentTab);
+
+            } catch (err) {
+                showAlert(err.message || "Operation failed", "error");
+                console.error(err);
+            }
+        });
+
+        // ==================== DELETE CONTROLLER ====================
+
+        async function triggerDelete(tabName, id) {
+            if (!confirm(`Are you sure you want to delete this ${tabName.slice(0, -1)} (ID: ${id})?`)) {
+                return;
+            }
+
+            try {
+                let endpoint = `/${tabName}/delete/${id}/`;
+                await apiFetch(endpoint, {
+                    method: "DELETE"
+                });
+
+                showAlert("Record deleted successfully", "success");
+                await reloadTab(currentTab);
+            } catch (err) {
+                showAlert(err.message || "Failed to delete record", "error");
+                console.error(err);
+            }
+        }
+    </script>
+</body>
+</html>

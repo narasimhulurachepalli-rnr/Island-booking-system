@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Vacation - IslandGate</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="section">
+        <h2 class="section-title">Configure Your <span>Dream Stay</span></h2>
+        
+        <div class="grid-booking">
+            <!-- Left Panel: Form -->
+            <div class="booking-panel">
+                <h3 style="font-family:var(--font-heading); margin-bottom:1.5rem; border-bottom:1px solid var(--border); padding-bottom:0.5rem;">Traveler Details</h3>
+                <form class="auth-form" id="booking-form">
+                    <div class="form-group">
+                        <label for="booking-cust-name">Full Name</label>
+                        <input type="text" id="booking-cust-name" class="form-control" readonly style="background-color: var(--border);">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="booking-cust-email">Email Address</label>
+                        <input type="email" id="booking-cust-email" class="form-control" readonly style="background-color: var(--border);">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="booking-travel-date">Travel Date</label>
+                        <input type="date" id="booking-travel-date" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="booking-travelers">Number of Travelers</label>
+                        <input type="number" id="booking-travelers" class="form-control" min="1" max="10" value="1" required oninput="updateTotalAmount()">
+                    </div>
+
+                    <button type="submit" class="btn-auth-submit" style="margin-top: 1rem;">Proceed to Payment &rarr;</button>
+                </form>
+            </div>
+
+            <!-- Right Panel: Summary -->
+            <div class="booking-summary-card" id="summary-panel">
+                <h3>Booking Summary</h3>
+                <div style="text-align:center; padding:2rem; opacity:0.8;">
+                    Loading package details...
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 IslandGate Booking System. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        let selectedPackage = null;
+        let basePrice = 0;
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            // Set today as minimum date
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById("booking-travel-date").setAttribute("min", today);
+
+            // Populate user details
+            const user = getCurrentUser();
+            if (user) {
+                document.getElementById("booking-cust-name").value = user.full_name;
+                document.getElementById("booking-cust-email").value = user.email;
+            }
+
+            // Retrieve package details from query param
+            const params = new URLSearchParams(window.location.search);
+            const packageId = params.get('package_id');
+
+            if (!packageId) {
+                showAlert("No package selected. Redirecting to packages...", "error");
+                setTimeout(() => {
+                    window.location.href = "packages.html";
+                }, 1500);
+                return;
+            }
+
+            await fetchPackageDetails(packageId);
+        });
+
+        async function fetchPackageDetails(id) {
+            try {
+                const packages = await apiFetch("/packages/");
+                selectedPackage = packages.find(p => p.package_id === parseInt(id));
+
+                if (!selectedPackage) {
+                    showAlert("Package not found", "error");
+                    setTimeout(() => {
+                        window.location.href = "packages.html";
+                    }, 1500);
+                    return;
+                }
+
+                basePrice = selectedPackage.price;
+                renderSummary();
+            } catch (err) {
+                console.error(err);
+                showAlert("Failed to load selected package", "error");
+            }
+        }
+
+        function renderSummary() {
+            const summaryDiv = document.getElementById("summary-panel");
+            const travelers = parseInt(document.getElementById("booking-travelers").value) || 1;
+            const total = basePrice * travelers;
+
+            summaryDiv.innerHTML = `
+                <h3>Booking Summary</h3>
+                
+                <div class="summary-row">
+                    <span style="opacity:0.75;">Island Resort</span>
+                    <span style="font-weight:600;">${selectedPackage.island_name}</span>
+                </div>
+                <div class="summary-row">
+                    <span style="opacity:0.75;">Resort Hotel</span>
+                    <span style="font-weight:600;">${selectedPackage.resort_name}</span>
+                </div>
+                <div class="summary-row">
+                    <span style="opacity:0.75;">Package Selected</span>
+                    <span style="font-weight:600;">${selectedPackage.package_name}</span>
+                </div>
+                <div class="summary-row">
+                    <span style="opacity:0.75;">Duration Stay</span>
+                    <span style="font-weight:600;">${selectedPackage.duration}</span>
+                </div>
+                <div class="summary-row">
+                    <span style="opacity:0.75;">Rate (Per Person)</span>
+                    <span style="font-weight:600;">₹${basePrice.toLocaleString()}</span>
+                </div>
+                
+                <div class="summary-row total">
+                    <span>Estimated Total</span>
+                    <span id="calculated-total">₹${total.toLocaleString()}</span>
+                </div>
+
+                <div style="background-color:rgba(255,255,255,0.06); padding:1rem; border-radius:var(--radius-md); font-size:0.85rem; line-height:1.5; color:#cbd5e1; margin-top:0.5rem;">
+                    💡 Package includes stay, services, and activity guides. Payments are secured and refundable under cancellation policies.
+                </div>
+            `;
+        }
+
+        function updateTotalAmount() {
+            if (!selectedPackage) return;
+            renderSummary();
+        }
+
+        document.getElementById("booking-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            if (!selectedPackage) {
+                showAlert("Please wait for package details to load", "error");
+                return;
+            }
+
+            const travel_date = document.getElementById("booking-travel-date").value;
+            const number_of_people = parseInt(document.getElementById("booking-travelers").value) || 1;
+            const total_amount = basePrice * number_of_people;
+            const user = getCurrentUser();
+
+            try {
+                const payload = {
+                    customer_name: user.full_name,
+                    island_name: selectedPackage.island_name,
+                    package_name: selectedPackage.package_name,
+                    travel_date,
+                    number_of_people,
+                    total_amount,
+                    booking_status: "Pending"
+                };
+
+                const response = await apiFetch("/bookings/add/", {
+                    method: "POST",
+                    body: JSON.stringify(payload)
+                });
+
+                showAlert("Booking created! Redirecting to payment...", "success");
+                setTimeout(() => {
+                    window.location.href = `payment.html?booking_id=${response.booking_id}`;
+                }, 1500);
+            } catch (err) {
+                showAlert(err.message || "Failed to finalize booking. Please try again.", "error");
+                console.error(err);
+            }
+        });
+    </script>
+</body>
+</html>

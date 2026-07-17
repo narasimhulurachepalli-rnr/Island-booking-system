@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Islands - IslandGate</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="section">
+        <div class="search-container" style="margin-top: 1rem; margin-bottom: 3rem;">
+            <div style="display:flex; flex-direction:column; gap:1.25rem;">
+                <h2 style="font-family:var(--font-heading); margin-bottom:0.25rem;">Find Your Next <span>Paradise</span></h2>
+                <div class="search-form" style="grid-template-columns: 2fr 1fr auto;">
+                    <div class="form-group">
+                        <label for="island-search-input">Search Keywords</label>
+                        <input type="text" id="island-search-input" class="form-control" placeholder="Island name or country...">
+                    </div>
+                    <div class="form-group">
+                        <label for="climate-filter">Climate</label>
+                        <select id="climate-filter" class="form-control">
+                            <option value="">All Climates</option>
+                            <option value="Tropical">Tropical</option>
+                            <option value="Temperate">Temperate</option>
+                            <option value="Mediterranean">Mediterranean</option>
+                            <option value="Subtropical">Subtropical</option>
+                        </select>
+                    </div>
+                    <button class="btn-search" onclick="filterIslands()">Filter</button>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="section-title">Explore <span>Available Islands</span></h2>
+        
+        <div class="island-grid" id="islands-grid">
+            <div style="grid-column: 1/-1; text-align:center; padding:3rem; color:var(--text-secondary);">
+                Loading islands...
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 IslandGate Booking System. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        let allIslands = [];
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            // Check query param for immediate search
+            const params = new URLSearchParams(window.location.search);
+            const initialSearch = params.get('search') || "";
+            document.getElementById("island-search-input").value = initialSearch;
+
+            await fetchAndRenderIslands(initialSearch);
+        });
+
+        async function fetchAndRenderIslands(searchQuery = "") {
+            const grid = document.getElementById("islands-grid");
+            try {
+                allIslands = await apiFetch("/islands/");
+                renderIslandsList(allIslands, searchQuery);
+            } catch (err) {
+                console.error(err);
+                grid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align:center; padding:3rem; color:var(--danger);">
+                        Failed to load islands from server.
+                    </div>
+                `;
+            }
+        }
+
+        function renderIslandsList(islands, searchQuery = "", climateFilter = "") {
+            const grid = document.getElementById("islands-grid");
+            
+            let filtered = islands;
+            if (searchQuery) {
+                const sq = searchQuery.toLowerCase();
+                filtered = filtered.filter(island => 
+                    island.island_name.toLowerCase().includes(sq) || 
+                    island.country.toLowerCase().includes(sq) ||
+                    island.description.toLowerCase().includes(sq)
+                );
+            }
+            if (climateFilter) {
+                filtered = filtered.filter(island => island.climate === climateFilter);
+            }
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align:center; padding:4rem; color:var(--text-secondary); background:var(--bg-card); border-radius:var(--radius-lg); border:1px solid var(--border);">
+                        <p style="font-size:1.2rem; font-weight:600; margin-bottom:0.5rem;">No Islands Found</p>
+                        <p>Try resetting filters or adjusting search terms.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const favs = localStorage.getItem("favoriteIslands") ? JSON.parse(localStorage.getItem("favoriteIslands")) : [];
+
+            grid.innerHTML = filtered.map(island => {
+                const isFav = favs.includes(island.island_name);
+                return `
+                    <div class="island-card">
+                        <div class="card-img-container">
+                            <img src="${island.image_url || 'https://images.unsplash.com/photo-1548574505-5e239809ee19?auto=format&fit=crop&w=600&q=80'}" class="card-img" alt="${island.island_name}" onerror="this.src='https://images.unsplash.com/photo-1548574505-5e239809ee19?auto=format&fit=crop&w=600&q=80'">
+                            <span class="card-badge">${island.climate}</span>
+                        </div>
+                        <div class="card-body">
+                            <h3 class="card-title">${island.island_name}</h3>
+                            <div class="card-subtitle">📍 ${island.country}</div>
+                            <p class="card-desc">${island.description}</p>
+                            <div class="card-meta-list">
+                                <div class="card-meta-item">
+                                    <span class="card-meta-label">Best Season</span>
+                                    <span class="card-meta-val">${island.best_season}</span>
+                                </div>
+                            </div>
+                            <button class="btn-card-action" onclick="exploreIslandPackages('${island.island_name}')">Explore Packages</button>
+                            <button class="btn-secondary" onclick="toggleFavorite('${island.island_name}')" style="margin-top: 0.5rem; width:100%; font-size:0.85rem; display:flex; align-items:center; justify-content:center; gap:0.4rem;">
+                                ${isFav ? '❤️ Remove Favorite' : '🤍 Add to Favorites'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterIslands() {
+            const query = document.getElementById("island-search-input").value.trim();
+            const climate = document.getElementById("climate-filter").value;
+            renderIslandsList(allIslands, query, climate);
+        }
+
+        function exploreIslandPackages(islandName) {
+            window.location.href = `packages.html?island_name=${encodeURIComponent(islandName)}`;
+        }
+
+        function toggleFavorite(islandName) {
+            let favs = localStorage.getItem("favoriteIslands") ? JSON.parse(localStorage.getItem("favoriteIslands")) : [];
+            if (favs.includes(islandName)) {
+                favs = favs.filter(name => name !== islandName);
+                showAlert(`Removed ${islandName} from favorites`, "success");
+            } else {
+                favs.push(islandName);
+                showAlert(`Added ${islandName} to favorites`, "success");
+            }
+            localStorage.setItem("favoriteIslands", JSON.stringify(favs));
+            // Re-render
+            const query = document.getElementById("island-search-input").value.trim();
+            const climate = document.getElementById("climate-filter").value;
+            renderIslandsList(allIslands, query, climate);
+        }
+    </script>
+</body>
+</html>

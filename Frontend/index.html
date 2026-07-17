@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IslandGate - Luxury Island Resort Booking Platform</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <div id="navbar-container"></div>
+
+    <!-- Hero Banner -->
+    <header class="hero">
+        <h1>Escape to Paradise</h1>
+        <p>Discover pristine white sands, crystal-clear blue waters, and premium luxury resort packages designed just for you.</p>
+        
+        <!-- Search Island Bar -->
+        <div class="hero-search-bar">
+            <input type="text" id="search-input" class="form-control" placeholder="Search islands by name, country, climate...">
+            <button class="btn-search" onclick="searchIslands()">🔍 Search</button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="section">
+        <!-- Featured Islands Section -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+            <h2 class="section-title" style="margin-bottom:0; text-align:left;">Featured <span>Islands</span></h2>
+            <a href="islands.html" style="font-weight:600; display:flex; align-items:center; gap:0.25rem;">View All Islands &rarr;</a>
+        </div>
+        <div class="island-grid" id="featured-islands-grid">
+            <!-- Loaded dynamically from API -->
+            <div style="grid-column: 1/-1; text-align:center; padding:3rem; color:var(--text-secondary);">
+                Loading featured islands...
+            </div>
+        </div>
+
+        <!-- Spacer -->
+        <div style="height: 4rem;"></div>
+
+        <!-- Popular Packages Section -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+            <h2 class="section-title" style="margin-bottom:0; text-align:left;">Popular <span>Packages</span></h2>
+            <a href="packages.html" style="font-weight:600; display:flex; align-items:center; gap:0.25rem;">View All Packages &rarr;</a>
+        </div>
+        <div class="packages-grid" id="popular-packages-grid">
+            <!-- Loaded dynamically from API -->
+            <div style="grid-column: 1/-1; text-align:center; padding:3rem; color:var(--text-secondary);">
+                Loading vacation packages...
+            </div>
+        </div>
+    </main>
+
+    <!-- Special Offers Banner -->
+    <section class="section" style="padding-top:0;">
+        <div class="offers-banner">
+            <div class="offers-content">
+                <h2>Enjoy 15% Off Your First Trip!</h2>
+                <p>Register an account today and use code <strong>ISLAND15</strong> at payment confirmation.</p>
+            </div>
+            <div class="offers-code">ISLAND15</div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 IslandGate Booking System. Designed for ultimate premium travel experiences.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            await loadFeaturedIslands();
+            await loadPopularPackages();
+        });
+
+        async function loadFeaturedIslands() {
+            const grid = document.getElementById("featured-islands-grid");
+            try {
+                const islands = await apiFetch("/islands/");
+                if (islands.length === 0) {
+                    grid.innerHTML = `
+                        <div style="grid-column: 1/-1; text-align:center; padding:3rem; color:var(--text-secondary);">
+                            No islands added yet. Please login to the <a href="login.html">Admin Panel</a> to seed data!
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Show maximum of 3 featured islands on homepage
+                grid.innerHTML = islands.slice(0, 3).map(island => `
+                    <div class="island-card">
+                        <div class="card-img-container">
+                            <img src="${island.image_url || 'https://images.unsplash.com/photo-1548574505-5e239809ee19?auto=format&fit=crop&w=600&q=80'}" class="card-img" alt="${island.island_name}" onerror="this.src='https://images.unsplash.com/photo-1548574505-5e239809ee19?auto=format&fit=crop&w=600&q=80'">
+                            <span class="card-badge">${island.climate}</span>
+                        </div>
+                        <div class="card-body">
+                            <h3 class="card-title">${island.island_name}</h3>
+                            <div class="card-subtitle">📍 ${island.country}</div>
+                            <p class="card-desc">${island.description}</p>
+                            <div class="card-meta-list">
+                                <div class="card-meta-item">
+                                    <span class="card-meta-label">Best Season</span>
+                                    <span class="card-meta-val">${island.best_season}</span>
+                                </div>
+                            </div>
+                            <button class="btn-card-action" onclick="viewIsland('${island.island_name}')">Explore Island</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error(err);
+                grid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align:center; padding:3rem; color:var(--danger);">
+                        Failed to fetch islands from backend. Ensure the Django server is running!
+                    </div>
+                `;
+            }
+        }
+
+        async function loadPopularPackages() {
+            const grid = document.getElementById("popular-packages-grid");
+            try {
+                const packages = await apiFetch("/packages/");
+                if (packages.length === 0) {
+                    grid.innerHTML = `
+                        <div style="grid-column: 1/-1; text-align:center; padding:3rem; color:var(--text-secondary);">
+                            No packages available.
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Show maximum of 3 packages on homepage
+                grid.innerHTML = packages.slice(0, 3).map(pkg => {
+                    const services = pkg.included_services.split(',').map(s => s.trim());
+                    return `
+                        <div class="package-card">
+                            <div class="card-img-container">
+                                <img src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=600&q=80" class="card-img" alt="${pkg.resort_name}">
+                                <span class="card-badge">${pkg.duration}</span>
+                            </div>
+                            <div class="card-body">
+                                <h3 class="card-title">${pkg.package_name}</h3>
+                                <div class="card-subtitle">🏨 ${pkg.resort_name} (${pkg.island_name})</div>
+                                <div class="services-list">
+                                    ${services.map(s => `<span class="service-tag">${s}</span>`).join('')}
+                                </div>
+                                <div class="card-meta-list">
+                                    <div class="card-meta-item">
+                                        <span class="card-meta-label">Total Fare</span>
+                                        <span class="card-meta-val" style="color:var(--primary); font-size:1.2rem;">₹${pkg.price.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                                <button class="btn-card-action" onclick="bookPackage(${pkg.package_id})">Book Now</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error(err);
+                grid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align:center; padding:3rem; color:var(--danger);">
+                        Failed to fetch packages from backend.
+                    </div>
+                `;
+            }
+        }
+
+        function viewIsland(islandName) {
+            window.location.href = `islands.html?search=${encodeURIComponent(islandName)}`;
+        }
+
+        function searchIslands() {
+            const query = document.getElementById("search-input").value;
+            window.location.href = `islands.html?search=${encodeURIComponent(query)}`;
+        }
+
+        function bookPackage(packageId) {
+            window.location.href = `booking.html?package_id=${packageId}`;
+        }
+    </script>
+</body>
+</html>

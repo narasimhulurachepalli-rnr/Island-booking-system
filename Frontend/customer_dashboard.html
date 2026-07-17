@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Dashboard - IslandGate</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="section" style="max-width:1400px; flex-grow:1; display:flex; flex-direction:column;">
+        <div style="margin-bottom: 2rem;">
+            <h1 style="font-family:var(--font-heading); margin-bottom:0.25rem;">Traveler <span>Portal</span></h1>
+            <p style="color:var(--text-secondary);" id="welcome-message">Manage your luxury island getaways, view history, and edit your profile details.</p>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Sidebar Navigation -->
+            <aside class="dashboard-sidebar">
+                <button class="db-tab-btn active" onclick="switchTab('trips')">✈️ Upcoming Trips</button>
+                <button class="db-tab-btn" onclick="switchTab('history')">📜 Booking History</button>
+                <button class="db-tab-btn" onclick="switchTab('payments')">💳 Payment Logs</button>
+                <button class="db-tab-btn" onclick="switchTab('favorites')">❤️ Favorite Islands</button>
+                <button class="db-tab-btn" onclick="switchTab('profile')">👤 My Profile</button>
+            </aside>
+
+            <!-- Main Panel Content -->
+            <section class="dashboard-main">
+                
+                <!-- Upcoming Trips Tab -->
+                <div id="tab-trips" class="dashboard-card db-tab-content">
+                    <div class="dashboard-header">
+                        <h2 style="font-size:1.5rem; font-weight:800;">Upcoming Trips</h2>
+                    </div>
+                    <div id="upcoming-trips-list" style="display:flex; flex-direction:column; gap:1.25rem;">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <!-- Booking History Tab -->
+                <div id="tab-history" class="dashboard-card db-tab-content" style="display:none;">
+                    <div class="dashboard-header">
+                        <h2 style="font-size:1.5rem; font-weight:800;">Booking History</h2>
+                    </div>
+                    <div class="table-container">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Booking ID</th>
+                                    <th>Island</th>
+                                    <th>Package</th>
+                                    <th>Date</th>
+                                    <th>Guests</th>
+                                    <th>Total Price</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bookings-history-table-body">
+                                <!-- Dynamically populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Payment logs Tab -->
+                <div id="tab-payments" class="dashboard-card db-tab-content" style="display:none;">
+                    <div class="dashboard-header">
+                        <h2 style="font-size:1.5rem; font-weight:800;">Payment Logs</h2>
+                    </div>
+                    <div class="table-container">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Transaction ID</th>
+                                    <th>Booking ID</th>
+                                    <th>Date</th>
+                                    <th>Method</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="payments-history-table-body">
+                                <!-- Dynamically populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Favorite Islands Tab -->
+                <div id="tab-favorites" class="dashboard-card db-tab-content" style="display:none;">
+                    <div class="dashboard-header">
+                        <h2 style="font-size:1.5rem; font-weight:800;">Favorite Islands</h2>
+                    </div>
+                    <div class="island-grid" id="favorites-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <!-- Profile Tab -->
+                <div id="tab-profile" class="dashboard-card db-tab-content" style="display:none;">
+                    <div class="dashboard-header">
+                        <h2 style="font-size:1.5rem; font-weight:800;">Profile Settings</h2>
+                    </div>
+                    <form class="auth-form" id="profile-form" style="max-width:600px;">
+                        <div class="form-group">
+                            <label for="profile-name">Full Name</label>
+                            <input type="text" id="profile-name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-email">Email Address</label>
+                            <input type="email" id="profile-email" class="form-control" readonly style="background-color: var(--border);">
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-phone">Phone Number</label>
+                            <input type="tel" id="profile-phone" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-nationality">Nationality</label>
+                            <input type="text" id="profile-nationality" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-password">Password</label>
+                            <input type="password" id="profile-password" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn-auth-submit" style="width:fit-content; padding-left:2.5rem; padding-right:2.5rem;">Save Changes</button>
+                    </form>
+                </div>
+
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 IslandGate Booking System. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        let allUserBookings = [];
+        let allUserPayments = [];
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            const user = getCurrentUser();
+            if (user) {
+                document.getElementById("welcome-message").innerText = `Welcome back, ${user.full_name}! Manage your luxury getaways and profile settings.`;
+                populateProfileForm(user);
+            }
+
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('pay_success') === 'true') {
+                showAlert("Payment completed successfully! Enjoy your trip.", "success");
+                history.pushState(null, "", "customer_dashboard.html");
+            }
+
+            await loadUserData();
+        });
+
+        function populateProfileForm(user) {
+            document.getElementById("profile-name").value = user.full_name;
+            document.getElementById("profile-email").value = user.email;
+            document.getElementById("profile-phone").value = user.phone;
+            document.getElementById("profile-nationality").value = user.nationality;
+            document.getElementById("profile-password").value = user.password || "";
+        }
+
+        async function loadUserData() {
+            const user = getCurrentUser();
+            if (!user) return;
+
+            try {
+                // Fetch bookings
+                const bookings = await apiFetch("/bookings/");
+                allUserBookings = bookings.filter(b => b.customer_name === user.full_name);
+                
+                // Fetch payments
+                const payments = await apiFetch("/payments/");
+                allUserPayments = payments.filter(p => p.customer_name === user.full_name);
+
+                renderUpcomingTrips();
+                renderBookingsTable();
+                renderPaymentsTable();
+                renderFavorites();
+            } catch (err) {
+                console.error(err);
+                showAlert("Failed to load dashboard data from database.", "error");
+            }
+        }
+
+        function switchTab(tabId) {
+            // Update sidebar buttons
+            const buttons = document.querySelectorAll(".db-tab-btn");
+            buttons.forEach(btn => {
+                if (btn.innerText.toLowerCase().includes(tabId)) {
+                    btn.classList.add("active");
+                } else {
+                    btn.classList.remove("active");
+                }
+            });
+
+            // Update content blocks
+            const contents = document.querySelectorAll(".db-tab-content");
+            contents.forEach(content => {
+                if (content.id === `tab-${tabId}`) {
+                    content.style.display = "block";
+                } else {
+                    content.style.display = "none";
+                }
+            });
+        }
+
+        function renderUpcomingTrips() {
+            const container = document.getElementById("upcoming-trips-list");
+            const today = new Date().toISOString().split('T')[0];
+            
+            const upcoming = allUserBookings.filter(b => b.travel_date >= today && b.booking_status !== 'Cancelled');
+
+            if (upcoming.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding:3rem; color:var(--text-secondary); background:var(--bg-light); border-radius:var(--radius-md); border:1px dashed var(--border);">
+                        <span style="font-size:2rem;">⚓</span>
+                        <p style="font-weight:600; margin-top:0.5rem; font-size:1.05rem;">No Upcoming Trips</p>
+                        <p style="font-size:0.875rem; margin-bottom:1rem;">Ready to set sail? Find a package and start exploring.</p>
+                        <a href="packages.html" class="btn-primary" style="font-size:0.875rem; padding:0.5rem 1rem;">View Resort Packages</a>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = upcoming.map(b => `
+                <div style="display:flex; justify-content:space-between; align-items:center; background-color:var(--bg-light); border:1px solid var(--border); padding:1.5rem; border-radius:var(--radius-md);">
+                    <div>
+                        <span class="status-badge ${b.booking_status.toLowerCase()}" style="margin-bottom:0.5rem;">${b.booking_status}</span>
+                        <h3 style="font-size:1.2rem; font-weight:700;">${b.package_name}</h3>
+                        <p style="font-size:0.875rem; color:var(--text-secondary); margin-top:0.25rem;">🌴 Island: <strong>${b.island_name}</strong> | 📅 Date: <strong>${b.travel_date}</strong> | 👤 Guests: <strong>${b.number_of_people}</strong></p>
+                    </div>
+                    <div style="text-align:right;">
+                        <p style="font-weight:800; color:var(--primary); font-size:1.2rem; margin-bottom:0.5rem;">₹${b.total_amount.toLocaleString()}</p>
+                        ${b.booking_status === 'Pending' ? `
+                            <button class="btn-primary" onclick="payPending(${b.booking_id})" style="font-size:0.8rem; padding:0.4rem 0.8rem;">Pay Now</button>
+                        ` : ''}
+                        ${b.booking_status !== 'Cancelled' ? `
+                            <button class="btn-secondary" onclick="cancelTrip(${b.booking_id})" style="font-size:0.8rem; padding:0.4rem 0.8rem; background-color:var(--danger-light); color:var(--danger); border-color:var(--danger-light);">Cancel Trip</button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderBookingsTable() {
+            const tbody = document.getElementById("bookings-history-table-body");
+            if (allUserBookings.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--text-secondary);">No bookings recorded.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = allUserBookings.map(b => `
+                <tr>
+                    <td style="font-weight:600;">#${b.booking_id}</td>
+                    <td>${b.island_name}</td>
+                    <td>${b.package_name}</td>
+                    <td>${b.travel_date}</td>
+                    <td>${b.number_of_people}</td>
+                    <td style="font-weight:700;">₹${b.total_amount.toLocaleString()}</td>
+                    <td><span class="status-badge ${b.booking_status.toLowerCase()}">${b.booking_status}</span></td>
+                    <td>
+                        ${b.booking_status === 'Pending' ? `
+                            <button class="btn-action-edit" onclick="payPending(${b.booking_id})">Pay</button>
+                        ` : ''}
+                        ${b.booking_status !== 'Cancelled' ? `
+                            <button class="btn-action-delete" onclick="cancelTrip(${b.booking_id})">Cancel</button>
+                        ` : '-'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderPaymentsTable() {
+            const tbody = document.getElementById("payments-history-table-body");
+            if (allUserPayments.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-secondary);">No payment logs recorded.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = allUserPayments.map(p => `
+                <tr>
+                    <td style="font-family:monospace; font-weight:600;">${p.transaction_id}</td>
+                    <td style="font-weight:600;">#${p.booking_id}</td>
+                    <td>${p.payment_date}</td>
+                    <td>${p.payment_method}</td>
+                    <td style="font-weight:700; color:var(--success);">₹${p.amount.toLocaleString()}</td>
+                    <td><span class="status-badge ${p.payment_status.toLowerCase()}">${p.payment_status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function getFavoritesList() {
+            const favs = localStorage.getItem("favoriteIslands");
+            return favs ? JSON.parse(favs) : [];
+        }
+
+        function saveFavoritesList(favs) {
+            localStorage.setItem("favoriteIslands", JSON.stringify(favs));
+        }
+
+        async function renderFavorites() {
+            const grid = document.getElementById("favorites-grid");
+            const favNames = getFavoritesList();
+
+            if (favNames.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align:center; padding:3rem; color:var(--text-secondary); background:var(--bg-light); border-radius:var(--radius-md);">
+                        <p>No favorite islands saved. Toggle favorites directly in the <a href="islands.html">Islands list</a>!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const islands = await apiFetch("/islands/");
+                const favIslands = islands.filter(island => favNames.includes(island.island_name));
+
+                if (favIslands.length === 0) {
+                    grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:3rem; color:var(--text-secondary);">No matching islands found.</div>`;
+                    return;
+                }
+
+                grid.innerHTML = favIslands.map(island => `
+                    <div class="island-card">
+                        <div class="card-img-container" style="height:150px;">
+                            <img src="${island.image_url || 'https://images.unsplash.com/photo-1548574505-5e239809ee19?auto=format&fit=crop&w=600&q=80'}" class="card-img" alt="${island.island_name}" onerror="this.src='https://images.unsplash.com/photo-1548574505-5e239809ee19?auto=format&fit=crop&w=600&q=80'">
+                            <span class="card-badge" style="font-size:0.65rem;">${island.climate}</span>
+                        </div>
+                        <div class="card-body" style="padding:1rem;">
+                            <h3 class="card-title" style="font-size:1.15rem; margin-bottom:0.15rem;">${island.island_name}</h3>
+                            <div class="card-subtitle" style="font-size:0.8rem; margin-bottom:0.75rem;">📍 ${island.country}</div>
+                            <button class="btn-card-action" onclick="exploreIslandPackages('${island.island_name}')" style="font-size:0.8rem; padding:0.5rem;">Find Packages</button>
+                            <button class="btn-secondary" onclick="toggleFavorite('${island.island_name}')" style="font-size:0.8rem; padding:0.5rem; margin-top:0.5rem; width:100%; color:var(--danger); border-color:var(--danger-light); background:var(--danger-light);">Remove Favorite</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error(err);
+                grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:3rem; color:var(--danger);">Failed to render favorites grid.</div>`;
+            }
+        }
+
+        function exploreIslandPackages(islandName) {
+            window.location.href = `packages.html?island_name=${encodeURIComponent(islandName)}`;
+        }
+
+        function toggleFavorite(islandName) {
+            let favs = getFavoritesList();
+            if (favs.includes(islandName)) {
+                favs = favs.filter(name => name !== islandName);
+                showAlert(`Removed ${islandName} from favorites`, "success");
+            } else {
+                favs.push(islandName);
+                showAlert(`Added ${islandName} to favorites`, "success");
+            }
+            saveFavoritesList(favs);
+            renderFavorites();
+        }
+
+        function payPending(bookingId) {
+            window.location.href = `payment.html?booking_id=${bookingId}`;
+        }
+
+        async function cancelTrip(bookingId) {
+            const booking = allUserBookings.find(b => b.booking_id === bookingId);
+            if (!booking) return;
+
+            if (!confirm(`Are you sure you want to cancel booking #${bookingId} for ${booking.package_name}?`)) {
+                return;
+            }
+
+            try {
+                const payload = {
+                    ...booking,
+                    booking_status: "Cancelled"
+                };
+
+                await apiFetch(`/bookings/update/${bookingId}/`, {
+                    method: "PUT",
+                    body: JSON.stringify(payload)
+                });
+
+                showAlert("Booking cancelled successfully", "success");
+                await loadUserData();
+            } catch (err) {
+                console.error(err);
+                showAlert("Failed to cancel trip. Contact Support.", "error");
+            }
+        }
+
+        document.getElementById("profile-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const user = getCurrentUser();
+            if (!user) return;
+
+            const full_name = document.getElementById("profile-name").value.trim();
+            const phone = document.getElementById("profile-phone").value.trim();
+            const nationality = document.getElementById("profile-nationality").value.trim();
+            const password = document.getElementById("profile-password").value;
+
+            try {
+                const payload = {
+                    full_name,
+                    email: user.email,
+                    phone,
+                    nationality,
+                    password
+                };
+
+                const updatedUser = await apiFetch(`/customers/update/${user.customer_id}/`, {
+                    method: "PUT",
+                    body: JSON.stringify(payload)
+                });
+
+                // Update session
+                setCurrentUser(updatedUser);
+                showAlert("Profile settings saved successfully!", "success");
+                
+                // Update header welcome message
+                document.getElementById("welcome-message").innerText = `Welcome back, ${updatedUser.full_name}! Manage your luxury getaways and profile settings.`;
+                renderNavBar();
+            } catch (err) {
+                console.error(err);
+                showAlert(err.message || "Failed to update profile", "error");
+            }
+        });
+    </script>
+</body>
+</html>

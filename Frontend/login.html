@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - IslandGate</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="auth-container">
+        <div class="auth-header">
+            <h2>Welcome Back</h2>
+            <p>Log in to your account to book vacation packages and manage bookings</p>
+        </div>
+
+        <form class="auth-form" id="login-form">
+            <div class="form-group">
+                <label for="login-email">Email Address</label>
+                <input type="email" id="login-email" placeholder="e.g. rahul@gmail.com or admin@islandgate.com" class="form-control" required autocomplete="email">
+            </div>
+            
+            <div class="form-group">
+                <label for="login-password">Password</label>
+                <input type="password" id="login-password" placeholder="••••••••" class="form-control" required autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="btn-auth-submit">Log In</button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Don't have an account? <a href="register.html">Register here</a></p>
+            <p style="margin-top: 1.25rem; font-size: 0.85rem; color: var(--text-secondary);">
+                Tip: Use <strong>admin@islandgate.com</strong> / <strong>admin123</strong> to login as Administrator.
+            </p>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 IslandGate Booking System. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
+            if (error === 'login_required') {
+                showAlert("Please log in to proceed with booking", "error");
+            } else if (error === 'admin_required') {
+                showAlert("Administrator credentials required", "error");
+            }
+        });
+
+        document.getElementById("login-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("login-email").value.trim();
+            const password = document.getElementById("login-password").value;
+
+            // Admin login override check
+            if (email === "admin@islandgate.com" && password === "admin123") {
+                localStorage.setItem("adminLoggedIn", "true");
+                showAlert("Admin logged in successfully!", "success");
+                setTimeout(() => {
+                    window.location.href = "admin_dashboard.html";
+                }, 1000);
+                return;
+            }
+
+            // Customer login check against DB list
+            try {
+                const customers = await apiFetch("/customers/");
+                const matched = customers.find(c => c.email.toLowerCase() === email.toLowerCase() && c.password === password);
+                
+                if (matched) {
+                    setCurrentUser(matched);
+                    showAlert(`Welcome back, ${matched.full_name}!`, "success");
+                    
+                    const redirect = localStorage.getItem("postLoginRedirect");
+                    localStorage.removeItem("postLoginRedirect");
+                    
+                    setTimeout(() => {
+                        window.location.href = redirect || "customer_dashboard.html";
+                    }, 1000);
+                } else {
+                    showAlert("Invalid email or password", "error");
+                }
+            } catch (error) {
+                showAlert("Error connecting to server. Please try again.", "error");
+                console.error("Login request failed:", error);
+            }
+        });
+    </script>
+</body>
+</html>
