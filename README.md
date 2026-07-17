@@ -68,6 +68,7 @@ IslandBookingSystem/
 ├── manage.py
 └── README.md
 ```
+<img width="959" height="488" alt="image" src="https://github.com/user-attachments/assets/4d415336-46cb-48ff-b46f-e6328b110cce" />
 
 ---
 
@@ -112,3 +113,13 @@ IslandBookingSystem/
 | **GET** | `/payments/` | Get list of all payments |
 | **PUT** | `/payments/update/<id>/` | Update specific payment |
 | **DELETE** | `/payments/delete/<id>/` | Delete payment by ID |
+<img width="955" height="469" alt="image" src="https://github.com/user-attachments/assets/a4799a79-1bc6-4abe-9502-ce2fe2cce4b5" />
+<img width="954" height="448" alt="image" src="https://github.com/user-attachments/assets/e782f289-037e-416c-bf98-cfebc0e97e8f" />
+<img width="949" height="440" alt="image" src="https://github.com/user-attachments/assets/f7d68c6d-a6ae-4cfc-accd-9a581b2d4825" />
+<img width="949" height="472" alt="image" src="https://github.com/user-attachments/assets/720086d5-e949-4204-beb5-aae9031e0055" />
+<img width="951" height="435" alt="image" src="https://github.com/user-attachments/assets/1b20283e-3ce1-4b46-b23f-6c4937ecbb6d" />
+<img width="953" height="479" alt="image" src="https://github.com/user-attachments/assets/4ed7ebe5-dc76-4e41-ad2d-21fc7749e637" />
+<img width="953" height="499" alt="image" src="https://github.com/user-attachments/assets/39059971-3600-4c2b-a65e-a3e3e5a6c0f6" />
+<img width="958" height="491" alt="image" src="https://github.com/user-attachments/assets/a63badf5-dced-498a-8616-56daeb3ab3f5" />
+
+
